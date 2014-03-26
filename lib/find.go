@@ -6,7 +6,7 @@
 
 * Creation Date : 03-19-2014
 
-* Last Modified : Wed 26 Mar 2014 12:22:28 AM UTC
+* Last Modified : Wed 26 Mar 2014 01:32:57 AM UTC
 
 * Created By : Kiyor
 
@@ -272,12 +272,8 @@ func Find(conf FindConf) []MyFile {
 		var f MyFile
 		f.getInfo(path)
 
-		var send bool
-		send = conf.CheckMdepth(f)
-		send = conf.CheckSize(f)
-		if send {
-			send = conf.CheckCtime(f) && conf.CheckMtime(f) && conf.CheckFType(f)
-		}
+		// only if all true then append
+		send := conf.CheckMdepth(f) && conf.CheckSize(f) && conf.CheckCtime(f) && conf.CheckMtime(f) && conf.CheckFType(f)
 
 		if send {
 			fs = append(fs, f)
@@ -293,12 +289,8 @@ func FindCh(ch chan MyFile, conf FindConf) {
 		var f MyFile
 		f.getInfo(path)
 
-		var send bool
-		send = conf.CheckMdepth(f)
-		send = conf.CheckSize(f)
-		if send {
-			send = conf.CheckCtime(f) && conf.CheckMtime(f) && conf.CheckFType(f)
-		}
+		// only if all true then append
+		send := conf.CheckMdepth(f) && conf.CheckSize(f) && conf.CheckCtime(f) && conf.CheckMtime(f) && conf.CheckFType(f)
 
 		if send {
 			ch <- f
