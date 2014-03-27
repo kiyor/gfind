@@ -77,7 +77,7 @@ func parseSize(str string) (string, string) {
 }
 
 func size2H(size int64) string {
-	return humanize.Bytes(uint64(size))
+	return humanize.IBytes(uint64(size))
 }
 
 func sizeFromH(str string) int64 {
