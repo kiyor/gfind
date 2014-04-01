@@ -1,12 +1,12 @@
 /* -.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.
 
-* File Name : find.go
+* File Name : gfind.go
 
 * Purpose :
 
 * Creation Date : 03-24-2014
 
-* Last Modified : Wed 26 Mar 2014 12:23:51 AM UTC
+* Last Modified : Tue 01 Apr 2014 11:25:42 PM UTC
 
 * Created By : Kiyor
 
@@ -30,6 +30,8 @@ var (
 	fcmin     *int64  = flag.Int64("cmin", 0, "File's status was last changed n mins ago")
 	fmtime    *int64  = flag.Int64("mtime", 0, "File's data was last changed n*24 hours ago")
 	fmmin     *int64  = flag.Int64("mmin", 0, "File's data was last changed n mins ago")
+	fatime    *int64  = flag.Int64("atime", 0, "File's data was last access n*24 hours ago")
+	famin     *int64  = flag.Int64("amin", 0, "File's data was last access n mins ago")
 	fmaxdepth *int    = flag.Int("maxdepth", 0, "Descend at most levels (a non-negative integer) levels of directories below the command line arguments.")
 	fftype    *string = flag.String("type", "f", "file type [f|d|l]")
 	fsize     *string = flag.String("size", "+0", "file size [-|+]%d[k|m|g]")
@@ -55,6 +57,8 @@ func InitFindConfByFlag() gfind.FindConf {
 	conf.Cmin = *fcmin
 	conf.Mtime = *fmtime
 	conf.Mmin = *fmmin
+	conf.Atime = *fatime
+	conf.Amin = *famin
 	conf.ParseCMTime()
 
 	conf.Ftype = *fftype

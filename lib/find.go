@@ -6,7 +6,7 @@
 
 * Creation Date : 03-19-2014
 
-* Last Modified : Wed 26 Mar 2014 01:32:57 AM UTC
+* Last Modified : Tue 01 Apr 2014 11:24:31 PM UTC
 
 * Created By : Kiyor
 
@@ -38,6 +38,8 @@ type FindConf struct {
 	Cmin     int64
 	Mtime    int64
 	Mmin     int64
+	Atime    int64
+	Amin     int64
 	FlatSize string
 }
 
@@ -134,12 +136,14 @@ func (conf *FindConf) ParseSize() {
 func (conf *FindConf) ParseCMTime() {
 	now := time.Now().Unix()
 
-	var ct, mt syscall.Timespec
+	var ct, mt, at syscall.Timespec
 	ct.Sec = now - int64(conf.Cmin*60) - int64(conf.Ctime*24*3600)
 	mt.Sec = now - int64(conf.Mmin*60) - int64(conf.Mtime*24*3600)
+	at.Sec = now - int64(conf.Amin*60) - int64(conf.Atime*24*3600)
 
 	conf.Stat.Ctim = ct
 	conf.Stat.Mtim = mt
+	conf.Stat.Atim = at
 }
 
 func InitFindConfByIni(confloc string) FindConf {
@@ -178,6 +182,8 @@ func InitFindConfByIni(confloc string) FindConf {
 	conf.Cmin = getIniConfInt(f, "cmin")
 	conf.Mtime = getIniConfInt(f, "mtime")
 	conf.Mmin = getIniConfInt(f, "mmin")
+	conf.Atime = getIniConfInt(f, "atime")
+	conf.Amin = getIniConfInt(f, "amin")
 	conf.ParseCMTime()
 
 	rootdir, ok = f.Get("gfind", "rootdir")
@@ -290,7 +296,7 @@ func FindCh(ch chan MyFile, conf FindConf) {
 		f.getInfo(path)
 
 		// only if all true then append
-		send := conf.CheckMdepth(f) && conf.CheckSize(f) && conf.CheckCtime(f) && conf.CheckMtime(f) && conf.CheckFType(f)
+		send := conf.CheckMdepth(f) && conf.CheckSize(f) && conf.CheckCtime(f) && conf.CheckMtime(f) && conf.CheckAtime(f) && conf.CheckFType(f)
 
 		if send {
 			ch <- f
@@ -334,6 +340,19 @@ func (conf *FindConf) CheckMtime(f MyFile) bool {
 	} else {
 		// if file's info modified time is later then set conf return true
 		if f.Stat.Mtim.Sec > conf.Stat.Mtim.Sec {
+			return true
+		}
+	}
+	return false
+}
+
+func (conf *FindConf) CheckAtime(f MyFile) bool {
+	// if not define in conf then return true
+	if conf.Atime == 0 && conf.Amin == 0 {
+		return true
+	} else {
+		// if file's info access time is later then set conf return true
+		if f.Stat.Atim.Sec > conf.Stat.Atim.Sec {
 			return true
 		}
 	}
