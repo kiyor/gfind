@@ -6,7 +6,7 @@
 
 * Creation Date : 03-19-2014
 
-* Last Modified : Tue 01 Apr 2014 11:24:31 PM UTC
+* Last Modified : Tue 01 Apr 2014 11:47:15 PM UTC
 
 * Created By : Kiyor
 
@@ -322,7 +322,7 @@ func (conf *FindConf) CheckMdepth(f MyFile) bool {
 
 func (conf *FindConf) CheckCtime(f MyFile) bool {
 	// if not define in conf then return true
-	if conf.Cmin == 0 && conf.Cmin == 0 {
+	if conf.Ctime == 0 && conf.Cmin == 0 {
 		return true
 	} else {
 		// if file's info create time is later then set conf return true
