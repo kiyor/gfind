@@ -6,7 +6,7 @@
 
 * Creation Date : 03-24-2014
 
-* Last Modified : Tue 01 Apr 2014 11:56:31 PM UTC
+* Last Modified : Wed 02 Apr 2014 12:43:05 AM UTC
 
 * Created By : Kiyor
 
@@ -18,6 +18,9 @@ import (
 	"flag"
 	"fmt"
 	"github.com/kiyor/gfind/lib"
+	"os"
+	"os/exec"
+	"strings"
 	"syscall"
 )
 
@@ -35,7 +38,9 @@ var (
 	fmaxdepth *int    = flag.Int("maxdepth", 0, "Descend at most levels (a non-negative integer) levels of directories below the command line arguments.")
 	fftype    *string = flag.String("type", "f", "file type [f|d|l]")
 	fsize     *string = flag.String("size", "+0", "file size [-|+]%d[k|m|g]")
-	verbose   *bool   = flag.Bool("v", false, "output analysis")
+
+	ex      *string = flag.String("exec", "", "exec, use {} as file input")
+	verbose *bool   = flag.Bool("v", false, "output analysis")
 )
 
 func init() {
@@ -76,5 +81,28 @@ func main() {
 
 	ch := make(chan gfind.MyFile)
 	go gfind.FindCh(ch, conf)
-	gfind.OutputCh(ch, *verbose)
+	if *ex == "" {
+		gfind.OutputCh(ch, *verbose)
+	} else {
+		Exec(ch, *ex)
+	}
+}
+
+func strip(v []byte) string {
+	return strings.TrimSpace(strings.Trim(string(v), "\n"))
+}
+
+func Exec(ch chan gfind.MyFile, e string) {
+	var v gfind.MyFile
+	ok := true
+	for ok {
+		if v, ok = <-ch; ok {
+			r := strings.NewReplacer("{}", v.Path)
+			c := r.Replace(e)
+			cmd := exec.Command("/bin/bash", "-c", c)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			cmd.Run()
+		}
+	}
 }
