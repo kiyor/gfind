@@ -6,7 +6,7 @@
 
 - Creation Date : 03-26-2014
 
-- Last Modified : Wed 02 Apr 2014 12:49:25 AM UTC
+- Last Modified : Wed 02 Apr 2014 01:06:18 AM UTC
 
 - Created By : Kiyor
 
@@ -59,7 +59,7 @@ func main() {
 | mmin     | like find             |
 | type     | like find             |
 | size     | use [-/+]num[k/m/g/t] |
-| exec     | use 'ls {}'           |
+| exec     | try this 'ls {};du {}'|
 
 
 ### sample config
