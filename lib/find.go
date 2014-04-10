@@ -294,7 +294,7 @@ func (f *MyFile) getName() {
 func (f *MyFile) getExt() {
 	token := strings.Split(f.Name, ".")
 	if len(token) > 1 {
-		f.Ext = token[1]
+		f.Ext = token[len(token)-1:][0]
 	}
 }
 
