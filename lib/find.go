@@ -6,7 +6,7 @@
 
 * Creation Date : 03-19-2014
 
-* Last Modified : Tue 01 Apr 2014 11:47:15 PM UTC
+* Last Modified : Thu 10 Apr 2014 12:30:33 AM UTC
 
 * Created By : Kiyor
 
@@ -20,6 +20,7 @@ import (
 	"github.com/vaughan0/go-ini"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -28,9 +29,11 @@ import (
 
 type FindConf struct {
 	Dir      string
+	Name     string
 	Stat     *syscall.Stat_t
 	Maxdepth int
 	Ftype    string
+	Ext      string
 	Rootdir  string
 	Size     int64
 	Smethod  string
@@ -170,6 +173,15 @@ func InitFindConfByIni(confloc string) FindConf {
 		}
 	}
 
+	conf.Name, ok = f.Get("gfind", "name")
+	if !ok {
+		conf.Name = ""
+	}
+	conf.Ext, ok = f.Get("gfind", "ext")
+	if !ok {
+		conf.Name = ""
+	}
+
 	conf.FlatSize, ok = f.Get("gfind", "size")
 	if !ok {
 		conf.FlatSize = "0"
@@ -253,6 +265,7 @@ func (f *MyFile) getInfo(path string) {
 	var fstat os.FileInfo
 	var err error
 	f.Path = path
+	f.getName()
 	f.Relpath = path[len(rootdir):]
 	fstat, err = os.Stat(path)
 	if err != nil {
@@ -272,6 +285,19 @@ func (f *MyFile) getInfo(path string) {
 	}
 }
 
+func (f *MyFile) getName() {
+	token := strings.Split(f.Path, "/")
+	f.Name = token[len(token)-1:][0]
+	f.getExt()
+}
+
+func (f *MyFile) getExt() {
+	token := strings.Split(f.Name, ".")
+	if len(token) > 1 {
+		f.Ext = token[1]
+	}
+}
+
 func Find(conf FindConf) []MyFile {
 	var fs []MyFile
 	err := filepath.Walk(conf.Dir, func(path string, _ os.FileInfo, _ error) error {
@@ -279,7 +305,7 @@ func Find(conf FindConf) []MyFile {
 		f.getInfo(path)
 
 		// only if all true then append
-		send := conf.CheckMdepth(f) && conf.CheckSize(f) && conf.CheckCtime(f) && conf.CheckMtime(f) && conf.CheckFType(f)
+		send := conf.CheckMdepth(f) && conf.CheckSize(f) && conf.CheckCtime(f) && conf.CheckMtime(f) && conf.CheckFType(f) && conf.CheckFName(f) && conf.CheckFExt(f)
 
 		if send {
 			fs = append(fs, f)
@@ -296,7 +322,7 @@ func FindCh(ch chan MyFile, conf FindConf) {
 		f.getInfo(path)
 
 		// only if all true then append
-		send := conf.CheckMdepth(f) && conf.CheckSize(f) && conf.CheckCtime(f) && conf.CheckMtime(f) && conf.CheckAtime(f) && conf.CheckFType(f)
+		send := conf.CheckMdepth(f) && conf.CheckSize(f) && conf.CheckCtime(f) && conf.CheckMtime(f) && conf.CheckAtime(f) && conf.CheckFType(f) && conf.CheckFName(f) && conf.CheckFExt(f)
 
 		if send {
 			ch <- f
@@ -365,6 +391,31 @@ func (conf *FindConf) CheckFType(f MyFile) bool {
 	} else if f.IsDir && conf.Ftype == "d" {
 		return true
 	} else if f.IsLink && conf.Ftype == "l" {
+		return true
+	}
+	return false
+}
+
+func (conf *FindConf) CheckFName(f MyFile) bool {
+	if conf.Name == "" {
+		return true
+	}
+	re, err := regexp.Compile(conf.Name)
+	if err != nil {
+		fmt.Println("name regex not able to compile", err.Error())
+		os.Exit(1)
+	}
+	if re.MatchString(f.Name) {
+		return true
+	}
+	return false
+}
+
+func (conf *FindConf) CheckFExt(f MyFile) bool {
+	if conf.Ext == "" {
+		return true
+	}
+	if conf.Ext == f.Ext {
 		return true
 	}
 	return false

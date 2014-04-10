@@ -6,7 +6,7 @@
 
 - Creation Date : 03-26-2014
 
-- Last Modified : Wed 02 Apr 2014 01:06:18 AM UTC
+- Last Modified : Thu 10 Apr 2014 12:39:08 AM UTC
 
 - Created By : Kiyor
 
@@ -51,6 +51,8 @@ func main() {
 | flag     | desc                  |
 |----------|-----------------------|
 | dir      | location              |
+| name     | file name support regex |
+| ext      | file extension        |
 | rootdir  | ignore prefix path    |
 | maxdepth | like find             |
 | ctime    | like find             |

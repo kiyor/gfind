@@ -6,7 +6,7 @@
 
 * Creation Date : 03-24-2014
 
-* Last Modified : Wed 02 Apr 2014 12:43:05 AM UTC
+* Last Modified : Thu 10 Apr 2014 12:29:19 AM UTC
 
 * Created By : Kiyor
 
@@ -38,6 +38,8 @@ var (
 	fmaxdepth *int    = flag.Int("maxdepth", 0, "Descend at most levels (a non-negative integer) levels of directories below the command line arguments.")
 	fftype    *string = flag.String("type", "f", "file type [f|d|l]")
 	fsize     *string = flag.String("size", "+0", "file size [-|+]%d[k|m|g]")
+	fname     *string = flag.String("name", "", "file name support regex")
+	fext      *string = flag.String("ext", "", "file ext")
 
 	ex      *string = flag.String("exec", "", "exec, use {} as file input")
 	verbose *bool   = flag.Bool("v", false, "output analysis")
@@ -67,6 +69,8 @@ func InitFindConfByFlag() gfind.FindConf {
 	conf.ParseCMTime()
 
 	conf.Ftype = *fftype
+	conf.Name = *fname
+	conf.Ext = *fext
 
 	conf.FlatSize = *fsize
 	conf.ParseSize()
