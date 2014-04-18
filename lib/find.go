@@ -6,7 +6,7 @@
 
 * Creation Date : 03-19-2014
 
-* Last Modified : Fri 18 Apr 2014 06:44:18 PM UTC
+* Last Modified : Fri 18 Apr 2014 07:22:56 PM UTC
 
 * Created By : Kiyor
 
@@ -47,13 +47,11 @@ type FindConf struct {
 	RsyncTemp int // ignore rsync temp file by defalut, set 1 to noignore. filename like .in.FILENAME.EXT.
 }
 
-type MyFile struct {
+type File struct {
+	os.FileInfo
 	Path    string
-	Name    string
 	Ext     string
-	Size    int64
 	IsLink  bool
-	IsDir   bool
 	IsFile  bool
 	Relpath string
 	Stat    *syscall.Stat_t
@@ -216,28 +214,28 @@ func InitFindConfByIni(confloc string) FindConf {
 	return conf
 }
 
-func Output(fs []MyFile, b bool) {
+func Output(fs []File, b bool) {
 	var count int
 	var size int64
 	var str string
 
 	for _, v := range fs {
 		if b {
-			str = fmt.Sprint(v.Relpath, " ", size2H(v.Size))
+			str = fmt.Sprint(v.Relpath, " ", size2H(v.Size()))
 		} else {
 			str = fmt.Sprint(v.Relpath)
 		}
 		fmt.Println(str)
 		count++
-		size += v.Size
+		size += v.Size()
 	}
 	if b {
 		fmt.Println("total:", count, "size:", size2H(size))
 	}
 }
 
-func OutputCh(ch chan MyFile, b bool) {
-	var v MyFile
+func OutputCh(ch chan File, b bool) {
+	var v File
 	var count int
 	var size int64
 	var str string
@@ -245,13 +243,13 @@ func OutputCh(ch chan MyFile, b bool) {
 	for ok {
 		if v, ok = <-ch; ok {
 			if b {
-				str = fmt.Sprint(v.Relpath, " ", size2H(v.Size))
+				str = fmt.Sprint(v.Relpath, " ", size2H(v.Size()))
 			} else {
 				str = fmt.Sprint(v.Relpath)
 			}
 			fmt.Println(str)
 			count++
-			size += v.Size
+			size += v.Size()
 		}
 	}
 	if b {
@@ -265,12 +263,10 @@ func chkErr(err error) {
 	}
 }
 
-func (f *MyFile) getInfo(path string) {
+func (f *File) getInfo(path string) {
 	var fstat os.FileInfo
 	var err error
 	f.Path = path
-	f.getName()
-	f.Relpath = path[len(rootdir):]
 	fstat, err = os.Stat(path)
 	if err != nil {
 		f.IsLink = true
@@ -280,32 +276,27 @@ func (f *MyFile) getInfo(path string) {
 			return
 		}
 	}
+	f.FileInfo = fstat
+	f.Relpath = path[len(rootdir):]
 	f.Stat = fstat.Sys().(*syscall.Stat_t)
-	f.Size = fstat.Size()
-	f.IsDir = fstat.IsDir()
+	f.getExt()
 
-	if !f.IsDir && !f.IsLink {
+	if !f.IsDir() && !f.IsLink {
 		f.IsFile = true
 	}
 }
 
-func (f *MyFile) getName() {
-	token := strings.Split(f.Path, "/")
-	f.Name = token[len(token)-1:][0]
-	f.getExt()
-}
-
-func (f *MyFile) getExt() {
-	token := strings.Split(f.Name, ".")
+func (f *File) getExt() {
+	token := strings.Split(f.Name(), ".")
 	if len(token) > 1 {
 		f.Ext = token[len(token)-1:][0]
 	}
 }
 
-func Find(conf FindConf) []MyFile {
-	var fs []MyFile
+func Find(conf FindConf) []File {
+	var fs []File
 	err := filepath.Walk(conf.Dir, func(path string, _ os.FileInfo, _ error) error {
-		var f MyFile
+		var f File
 		f.getInfo(path)
 
 		// only if all true then append
@@ -320,9 +311,9 @@ func Find(conf FindConf) []MyFile {
 	return fs
 }
 
-func FindCh(ch chan MyFile, conf FindConf) {
+func FindCh(ch chan File, conf FindConf) {
 	err := filepath.Walk(conf.Dir, func(path string, _ os.FileInfo, _ error) error {
-		var f MyFile
+		var f File
 		f.getInfo(path)
 
 		// only if all true then append
@@ -337,7 +328,7 @@ func FindCh(ch chan MyFile, conf FindConf) {
 	close(ch)
 }
 
-func (conf *FindConf) checkMdepth(f MyFile) bool {
+func (conf *FindConf) checkMdepth(f File) bool {
 	if conf.Maxdepth == 0 {
 		return true
 	} else {
@@ -350,7 +341,7 @@ func (conf *FindConf) checkMdepth(f MyFile) bool {
 	return false
 }
 
-func (conf *FindConf) checkCtime(f MyFile) bool {
+func (conf *FindConf) checkCtime(f File) bool {
 	// if not define in conf then return true
 	if conf.Ctime == 0 && conf.Cmin == 0 {
 		return true
@@ -363,7 +354,7 @@ func (conf *FindConf) checkCtime(f MyFile) bool {
 	return false
 }
 
-func (conf *FindConf) checkMtime(f MyFile) bool {
+func (conf *FindConf) checkMtime(f File) bool {
 	// if not define in conf then return true
 	if conf.Mtime == 0 && conf.Mmin == 0 {
 		return true
@@ -376,7 +367,7 @@ func (conf *FindConf) checkMtime(f MyFile) bool {
 	return false
 }
 
-func (conf *FindConf) checkAtime(f MyFile) bool {
+func (conf *FindConf) checkAtime(f File) bool {
 	// if not define in conf then return true
 	if conf.Atime == 0 && conf.Amin == 0 {
 		return true
@@ -389,10 +380,10 @@ func (conf *FindConf) checkAtime(f MyFile) bool {
 	return false
 }
 
-func (conf *FindConf) checkFType(f MyFile) bool {
+func (conf *FindConf) checkFType(f File) bool {
 	if f.IsFile && conf.Ftype == "f" {
 		return true
-	} else if f.IsDir && conf.Ftype == "d" {
+	} else if f.IsDir() && conf.Ftype == "d" {
 		return true
 	} else if f.IsLink && conf.Ftype == "l" {
 		return true
@@ -400,7 +391,7 @@ func (conf *FindConf) checkFType(f MyFile) bool {
 	return false
 }
 
-func (conf *FindConf) checkFName(f MyFile) bool {
+func (conf *FindConf) checkFName(f File) bool {
 	if conf.Name == "" {
 		return true
 	}
@@ -409,13 +400,13 @@ func (conf *FindConf) checkFName(f MyFile) bool {
 		fmt.Println("name regex not able to compile", err.Error())
 		os.Exit(1)
 	}
-	if re.MatchString(f.Name) {
+	if re.MatchString(f.Name()) {
 		return true
 	}
 	return false
 }
 
-func (conf *FindConf) checkFExt(f MyFile) bool {
+func (conf *FindConf) checkFExt(f File) bool {
 	if conf.Ext == "" {
 		return true
 	}
@@ -425,25 +416,25 @@ func (conf *FindConf) checkFExt(f MyFile) bool {
 	return false
 }
 
-func (conf *FindConf) checkSize(f MyFile) bool {
+func (conf *FindConf) checkSize(f File) bool {
 	switch conf.Smethod {
 	case "-":
-		if f.Size < conf.Size {
+		if f.Size() < conf.Size {
 			return true
 		}
 	default:
-		if f.Size > conf.Size {
+		if f.Size() > conf.Size {
 			return true
 		}
 	}
 	return false
 }
 
-func (conf *FindConf) checkRsyncTemp(f MyFile) bool {
+func (conf *FindConf) checkRsyncTemp(f File) bool {
 	if conf.RsyncTemp == 1 {
 		return true
 	}
-	if reRsyncTemp.MatchString(f.Name) {
+	if reRsyncTemp.MatchString(f.Name()) {
 		return false
 	}
 	return true
