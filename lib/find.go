@@ -6,7 +6,7 @@
 
 * Creation Date : 03-19-2014
 
-* Last Modified : Thu 10 Apr 2014 12:30:33 AM UTC
+* Last Modified : Fri 18 Apr 2014 06:44:18 PM UTC
 
 * Created By : Kiyor
 
@@ -28,22 +28,23 @@ import (
 )
 
 type FindConf struct {
-	Dir      string
-	Name     string
-	Stat     *syscall.Stat_t
-	Maxdepth int
-	Ftype    string
-	Ext      string
-	Rootdir  string
-	Size     int64
-	Smethod  string
-	Ctime    int64
-	Cmin     int64
-	Mtime    int64
-	Mmin     int64
-	Atime    int64
-	Amin     int64
-	FlatSize string
+	Dir       string
+	Name      string
+	Stat      *syscall.Stat_t
+	Maxdepth  int
+	Ftype     string
+	Ext       string
+	Rootdir   string
+	Size      int64
+	Smethod   string
+	Ctime     int64
+	Cmin      int64
+	Mtime     int64
+	Mmin      int64
+	Atime     int64
+	Amin      int64
+	FlatSize  string
+	RsyncTemp int // ignore rsync temp file by defalut, set 1 to noignore. filename like .in.FILENAME.EXT.
 }
 
 type MyFile struct {
@@ -59,7 +60,8 @@ type MyFile struct {
 }
 
 var (
-	rootdir string
+	rootdir     string
+	reRsyncTemp = regexp.MustCompile(`^\.in\..*\.$`)
 )
 
 func parseSize(str string) (string, string) {
@@ -198,6 +200,8 @@ func InitFindConfByIni(confloc string) FindConf {
 	conf.Amin = getIniConfInt(f, "amin")
 	conf.ParseCMTime()
 
+	conf.RsyncTemp = int(getIniConfInt(f, "rsynctemp"))
+
 	rootdir, ok = f.Get("gfind", "rootdir")
 	if !ok {
 		conf.Rootdir = ""
@@ -305,7 +309,7 @@ func Find(conf FindConf) []MyFile {
 		f.getInfo(path)
 
 		// only if all true then append
-		send := conf.CheckMdepth(f) && conf.CheckSize(f) && conf.CheckCtime(f) && conf.CheckMtime(f) && conf.CheckFType(f) && conf.CheckFName(f) && conf.CheckFExt(f)
+		send := conf.checkMdepth(f) && conf.checkSize(f) && conf.checkCtime(f) && conf.checkMtime(f) && conf.checkFType(f) && conf.checkFName(f) && conf.checkFExt(f) && conf.checkRsyncTemp(f)
 
 		if send {
 			fs = append(fs, f)
@@ -322,7 +326,7 @@ func FindCh(ch chan MyFile, conf FindConf) {
 		f.getInfo(path)
 
 		// only if all true then append
-		send := conf.CheckMdepth(f) && conf.CheckSize(f) && conf.CheckCtime(f) && conf.CheckMtime(f) && conf.CheckAtime(f) && conf.CheckFType(f) && conf.CheckFName(f) && conf.CheckFExt(f)
+		send := conf.checkMdepth(f) && conf.checkSize(f) && conf.checkCtime(f) && conf.checkMtime(f) && conf.checkAtime(f) && conf.checkFType(f) && conf.checkFName(f) && conf.checkFExt(f) && conf.checkRsyncTemp(f)
 
 		if send {
 			ch <- f
@@ -333,7 +337,7 @@ func FindCh(ch chan MyFile, conf FindConf) {
 	close(ch)
 }
 
-func (conf *FindConf) CheckMdepth(f MyFile) bool {
+func (conf *FindConf) checkMdepth(f MyFile) bool {
 	if conf.Maxdepth == 0 {
 		return true
 	} else {
@@ -346,7 +350,7 @@ func (conf *FindConf) CheckMdepth(f MyFile) bool {
 	return false
 }
 
-func (conf *FindConf) CheckCtime(f MyFile) bool {
+func (conf *FindConf) checkCtime(f MyFile) bool {
 	// if not define in conf then return true
 	if conf.Ctime == 0 && conf.Cmin == 0 {
 		return true
@@ -359,7 +363,7 @@ func (conf *FindConf) CheckCtime(f MyFile) bool {
 	return false
 }
 
-func (conf *FindConf) CheckMtime(f MyFile) bool {
+func (conf *FindConf) checkMtime(f MyFile) bool {
 	// if not define in conf then return true
 	if conf.Mtime == 0 && conf.Mmin == 0 {
 		return true
@@ -372,7 +376,7 @@ func (conf *FindConf) CheckMtime(f MyFile) bool {
 	return false
 }
 
-func (conf *FindConf) CheckAtime(f MyFile) bool {
+func (conf *FindConf) checkAtime(f MyFile) bool {
 	// if not define in conf then return true
 	if conf.Atime == 0 && conf.Amin == 0 {
 		return true
@@ -385,7 +389,7 @@ func (conf *FindConf) CheckAtime(f MyFile) bool {
 	return false
 }
 
-func (conf *FindConf) CheckFType(f MyFile) bool {
+func (conf *FindConf) checkFType(f MyFile) bool {
 	if f.IsFile && conf.Ftype == "f" {
 		return true
 	} else if f.IsDir && conf.Ftype == "d" {
@@ -396,7 +400,7 @@ func (conf *FindConf) CheckFType(f MyFile) bool {
 	return false
 }
 
-func (conf *FindConf) CheckFName(f MyFile) bool {
+func (conf *FindConf) checkFName(f MyFile) bool {
 	if conf.Name == "" {
 		return true
 	}
@@ -411,7 +415,7 @@ func (conf *FindConf) CheckFName(f MyFile) bool {
 	return false
 }
 
-func (conf *FindConf) CheckFExt(f MyFile) bool {
+func (conf *FindConf) checkFExt(f MyFile) bool {
 	if conf.Ext == "" {
 		return true
 	}
@@ -421,7 +425,7 @@ func (conf *FindConf) CheckFExt(f MyFile) bool {
 	return false
 }
 
-func (conf *FindConf) CheckSize(f MyFile) bool {
+func (conf *FindConf) checkSize(f MyFile) bool {
 	switch conf.Smethod {
 	case "-":
 		if f.Size < conf.Size {
@@ -433,4 +437,14 @@ func (conf *FindConf) CheckSize(f MyFile) bool {
 		}
 	}
 	return false
+}
+
+func (conf *FindConf) checkRsyncTemp(f MyFile) bool {
+	if conf.RsyncTemp == 1 {
+		return true
+	}
+	if reRsyncTemp.MatchString(f.Name) {
+		return false
+	}
+	return true
 }

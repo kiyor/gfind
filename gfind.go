@@ -6,7 +6,7 @@
 
 * Creation Date : 03-24-2014
 
-* Last Modified : Thu 10 Apr 2014 12:29:19 AM UTC
+* Last Modified : Fri 18 Apr 2014 06:48:52 PM UTC
 
 * Created By : Kiyor
 
@@ -25,21 +25,22 @@ import (
 )
 
 var (
-	dir       *string = flag.String("dir", ".", "chk dir")
-	root      *string = flag.String("rootdir", "", "web server root dir")
-	fhost     *string = flag.String("host", "http://server.com", "http hostname")
-	fvhost    *string = flag.String("vhost", "client.com", "vhost hostname")
-	fctime    *int64  = flag.Int64("ctime", 0, "File's status was last changed n*24 hours ago")
-	fcmin     *int64  = flag.Int64("cmin", 0, "File's status was last changed n mins ago")
-	fmtime    *int64  = flag.Int64("mtime", 0, "File's data was last changed n*24 hours ago")
-	fmmin     *int64  = flag.Int64("mmin", 0, "File's data was last changed n mins ago")
-	fatime    *int64  = flag.Int64("atime", 0, "File's data was last access n*24 hours ago")
-	famin     *int64  = flag.Int64("amin", 0, "File's data was last access n mins ago")
-	fmaxdepth *int    = flag.Int("maxdepth", 0, "Descend at most levels (a non-negative integer) levels of directories below the command line arguments.")
-	fftype    *string = flag.String("type", "f", "file type [f|d|l]")
-	fsize     *string = flag.String("size", "+0", "file size [-|+]%d[k|m|g]")
-	fname     *string = flag.String("name", "", "file name support regex")
-	fext      *string = flag.String("ext", "", "file ext")
+	dir        *string = flag.String("dir", ".", "chk dir")
+	root       *string = flag.String("rootdir", "", "web server root dir")
+	fhost      *string = flag.String("host", "http://server.com", "http hostname")
+	fvhost     *string = flag.String("vhost", "client.com", "vhost hostname")
+	fctime     *int64  = flag.Int64("ctime", 0, "File's status was last changed n*24 hours ago")
+	fcmin      *int64  = flag.Int64("cmin", 0, "File's status was last changed n mins ago")
+	fmtime     *int64  = flag.Int64("mtime", 0, "File's data was last changed n*24 hours ago")
+	fmmin      *int64  = flag.Int64("mmin", 0, "File's data was last changed n mins ago")
+	fatime     *int64  = flag.Int64("atime", 0, "File's data was last access n*24 hours ago")
+	famin      *int64  = flag.Int64("amin", 0, "File's data was last access n mins ago")
+	fmaxdepth  *int    = flag.Int("maxdepth", 0, "Descend at most levels (a non-negative integer) levels of directories below the command line arguments.")
+	fftype     *string = flag.String("type", "f", "file type [f|d|l]")
+	fsize      *string = flag.String("size", "+0", "file size [-|+]%d[k|m|g]")
+	fname      *string = flag.String("name", "", "file name support regex")
+	fext       *string = flag.String("ext", "", "file ext")
+	frsynctemp *bool   = flag.Bool("rsynctemp", false, "enable output with rsync temp file")
 
 	ex      *string = flag.String("exec", "", "exec, use {} as file input")
 	verbose *bool   = flag.Bool("v", false, "output analysis")
@@ -71,6 +72,9 @@ func InitFindConfByFlag() gfind.FindConf {
 	conf.Ftype = *fftype
 	conf.Name = *fname
 	conf.Ext = *fext
+	if *frsynctemp {
+		conf.RsyncTemp = 1
+	}
 
 	conf.FlatSize = *fsize
 	conf.ParseSize()
