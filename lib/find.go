@@ -6,7 +6,7 @@
 
 * Creation Date : 03-19-2014
 
-* Last Modified : Fri 18 Apr 2014 07:22:56 PM UTC
+* Last Modified : Mon 21 Apr 2014 11:03:24 PM UTC
 
 * Created By : Kiyor
 
@@ -203,15 +203,21 @@ func InitFindConfByIni(confloc string) FindConf {
 	rootdir, ok = f.Get("gfind", "rootdir")
 	if !ok {
 		conf.Rootdir = ""
-	} else {
-		if len(rootdir) > 0 {
-			if rootdir[len(rootdir)-1:] == "/" {
-				rootdir = rootdir[:len(rootdir)-1]
-			}
-		}
 	}
+	conf.SetRootdir()
 
 	return conf
+}
+
+// set root dir by conf.Rootdir
+func (c *FindConf) SetRootdir() {
+	if len(c.Rootdir) > 0 {
+		if c.Rootdir[len(c.Rootdir)-1:] == "/" {
+			rootdir = c.Rootdir[:len(c.Rootdir)-1]
+		} else {
+			rootdir = c.Rootdir[:len(c.Rootdir)-1] + "/"
+		}
+	}
 }
 
 func Output(fs []File, b bool) {
@@ -278,6 +284,11 @@ func (f *File) getInfo(path string) {
 	}
 	f.FileInfo = fstat
 	f.Relpath = path[len(rootdir):]
+	// 	f.Relpath, err = filepath.Rel(rootdir, f.Path)
+	// 	if err != nil {
+	// 		fmt.Println(err.Error())
+	// 		return
+	// 	}
 	f.Stat = fstat.Sys().(*syscall.Stat_t)
 	f.getExt()
 

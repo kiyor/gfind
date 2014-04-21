@@ -6,7 +6,7 @@
 
 * Creation Date : 03-24-2014
 
-* Last Modified : Fri 18 Apr 2014 07:23:44 PM UTC
+* Last Modified : Mon 21 Apr 2014 11:15:41 PM UTC
 
 * Created By : Kiyor
 
@@ -42,6 +42,8 @@ var (
 	fext       *string = flag.String("ext", "", "file ext")
 	frsynctemp *bool   = flag.Bool("rsynctemp", false, "enable output with rsync temp file")
 
+	fconf *string = flag.String("f", "", "use config file find")
+
 	ex      *string = flag.String("exec", "", "exec, use {} as file input")
 	verbose *bool   = flag.Bool("v", false, "output analysis")
 )
@@ -72,6 +74,8 @@ func InitFindConfByFlag() gfind.FindConf {
 	conf.Ftype = *fftype
 	conf.Name = *fname
 	conf.Ext = *fext
+	conf.Rootdir = *root
+	conf.SetRootdir()
 	if *frsynctemp {
 		conf.RsyncTemp = 1
 	}
@@ -83,7 +87,12 @@ func InitFindConfByFlag() gfind.FindConf {
 }
 
 func main() {
-	conf := InitFindConfByFlag()
+	var conf gfind.FindConf
+	if *fconf != "" {
+		conf = gfind.InitFindConfByIni(*fconf)
+	} else {
+		conf = InitFindConfByFlag()
+	}
 	// 	fs := gfind.Find(conf)
 	// 	gfind.Output(fs, *verbose)
 
