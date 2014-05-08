@@ -6,7 +6,7 @@
 
 * Creation Date : 03-19-2014
 
-* Last Modified : Thu 08 May 2014 09:50:49 PM UTC
+* Last Modified : Thu 08 May 2014 09:51:54 PM UTC
 
 * Created By : Kiyor
 
@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"github.com/dustin/go-humanize"
 	"github.com/vaughan0/go-ini"
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -51,7 +52,6 @@ type File struct {
 	os.FileInfo
 	Path    string
 	Ext     string
-	IsLink  bool
 	IsFile  bool
 	Relpath string
 	Stat    *syscall.Stat_t
@@ -92,7 +92,7 @@ func sizeFromH(str string) int64 {
 	}
 	n, err := strconv.ParseInt(str[:len(str)-1], 10, 64)
 	if err != nil {
-		fmt.Println("size not able to parse")
+		log.Fatalln("size not able to parse")
 		os.Exit(1)
 	}
 	c := str[len(str)-1:]
@@ -168,7 +168,7 @@ func InitFindConfByIni(confloc string) FindConf {
 		conf.Ftype = "f"
 	} else {
 		if conf.Ftype != "f" && conf.Ftype != "d" && conf.Ftype != "l" {
-			fmt.Println("file type not suppoet")
+			log.Fatalln("file type not suppoet")
 			os.Exit(1)
 		}
 	}
@@ -265,36 +265,43 @@ func OutputCh(ch chan File, b bool) {
 
 func chkErr(err error) {
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Fatalln(err.Error())
 	}
 }
 
-func (f *File) getInfo(path string) {
+func (f *File) IsLink() bool {
+	realPath, _ := os.Readlink(f.Path)
+	if realPath != "" {
+		return true
+	}
+	return false
+}
+
+func (f *File) getInfo(path string) error {
 	var fstat os.FileInfo
 	var err error
 	f.Path = path
 	fstat, err = os.Stat(path)
 	if err != nil {
-		f.IsLink = true
 		fstat, err = os.Lstat(path)
 		if err != nil {
-			fmt.Println(err.Error())
-			return
+			return err
 		}
 	}
 	f.FileInfo = fstat
 	f.Relpath = path[len(rootdir):]
 	// 	f.Relpath, err = filepath.Rel(rootdir, f.Path)
 	// 	if err != nil {
-	// 		fmt.Println(err.Error())
+	// 		log.Fatalln(err.Error())
 	// 		return
 	// 	}
 	f.Stat = fstat.Sys().(*syscall.Stat_t)
 	f.getExt()
 
-	if !f.IsDir() && !f.IsLink {
+	if !f.IsDir() && !f.IsLink() {
 		f.IsFile = true
 	}
+	return nil
 }
 
 func (f *File) getExt() {
@@ -308,10 +315,13 @@ func Find(conf FindConf) []File {
 	var fs []File
 	err := filepath.Walk(conf.Dir, func(path string, _ os.FileInfo, _ error) error {
 		var f File
-		f.getInfo(path)
+		err := f.getInfo(path)
+		if err != nil {
+			return nil
+		}
 
 		// only if all true then append
-		send := conf.checkMdepth(f) && conf.checkSize(f) && conf.checkCtime(f) && conf.checkMtime(f) && conf.checkFType(f) && conf.checkFName(f) && conf.checkFExt(f) && conf.checkRsyncTemp(f)
+		send := conf.checkMdepth(f) && conf.checkSize(f) && conf.checkCtime(f) && conf.checkMtime(f) && conf.checkAtime(f) && conf.checkFType(f) && conf.checkFName(f) && conf.checkFExt(f) && conf.checkRsyncTemp(f)
 
 		if send {
 			fs = append(fs, f)
@@ -325,7 +335,10 @@ func Find(conf FindConf) []File {
 func FindCh(ch chan File, conf FindConf) {
 	err := filepath.Walk(conf.Dir, func(path string, _ os.FileInfo, _ error) error {
 		var f File
-		f.getInfo(path)
+		err := f.getInfo(path)
+		if err != nil {
+			return nil
+		}
 
 		// only if all true then append
 		send := conf.checkMdepth(f) && conf.checkSize(f) && conf.checkCtime(f) && conf.checkMtime(f) && conf.checkAtime(f) && conf.checkFType(f) && conf.checkFName(f) && conf.checkFExt(f) && conf.checkRsyncTemp(f)
@@ -396,7 +409,7 @@ func (conf *FindConf) checkFType(f File) bool {
 		return true
 	} else if f.IsDir() && conf.Ftype == "d" {
 		return true
-	} else if f.IsLink && conf.Ftype == "l" {
+	} else if f.IsLink() && conf.Ftype == "l" {
 		return true
 	}
 	return false
@@ -408,7 +421,7 @@ func (conf *FindConf) checkFName(f File) bool {
 	}
 	re, err := regexp.Compile(conf.Name)
 	if err != nil {
-		fmt.Println("name regex not able to compile", err.Error())
+		log.Fatalln("name regex not able to compile", err.Error())
 		os.Exit(1)
 	}
 	if re.MatchString(f.Name()) {
@@ -428,21 +441,21 @@ func (conf *FindConf) checkFExt(f File) bool {
 }
 
 func (conf *FindConf) checkSize(f File) bool {
+	// 	defer func() {
+	// 		if r := recover(); r != nil {
+	// 			log.Fatalln("here")
+	// 		}
+	// 	}()
 	switch conf.Smethod {
 	case "-":
 		if f.Size() < conf.Size {
 			return true
 		}
 	default:
-		if f.Size() > conf.Size {
+		if f.Size() >= conf.Size {
 			return true
 		}
 	}
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Recovered in checkSize", r)
-		}
-	}()
 	return false
 }
 
