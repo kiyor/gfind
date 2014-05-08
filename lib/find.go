@@ -6,7 +6,7 @@
 
 * Creation Date : 03-19-2014
 
-* Last Modified : Mon 21 Apr 2014 11:03:24 PM UTC
+* Last Modified : Thu 08 May 2014 09:50:49 PM UTC
 
 * Created By : Kiyor
 
@@ -438,6 +438,11 @@ func (conf *FindConf) checkSize(f File) bool {
 			return true
 		}
 	}
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in checkSize", r)
+		}
+	}()
 	return false
 }
 
