@@ -6,7 +6,7 @@
 
 * Creation Date : 03-19-2014
 
-* Last Modified : Mon 21 Apr 2014 11:03:24 PM UTC
+* Last Modified : Wed 21 May 2014 08:38:55 PM UTC
 
 * Created By : Kiyor
 
@@ -43,6 +43,7 @@ type FindConf struct {
 	Mmin      int64
 	Atime     int64
 	Amin      int64
+	RevTime   bool
 	FlatSize  string
 	RsyncTemp int // ignore rsync temp file by defalut, set 1 to noignore. filename like .in.FILENAME.EXT.
 }
@@ -189,6 +190,14 @@ func InitFindConfByIni(confloc string) FindConf {
 		conf.ParseSize()
 	}
 
+	var revt string
+	revt, ok = f.Get("gfind", "revtime")
+	if ok {
+		if revt == "true" {
+			conf.RevTime = true
+		}
+	}
+
 	conf.Maxdepth = int(getIniConfInt(f, "maxdepth"))
 	conf.Ctime = getIniConfInt(f, "ctime")
 	conf.Cmin = getIniConfInt(f, "cmin")
@@ -311,7 +320,7 @@ func Find(conf FindConf) []File {
 		f.getInfo(path)
 
 		// only if all true then append
-		send := conf.checkMdepth(f) && conf.checkSize(f) && conf.checkCtime(f) && conf.checkMtime(f) && conf.checkFType(f) && conf.checkFName(f) && conf.checkFExt(f) && conf.checkRsyncTemp(f)
+		send := conf.checkAll(f)
 
 		if send {
 			fs = append(fs, f)
@@ -328,7 +337,7 @@ func FindCh(ch chan File, conf FindConf) {
 		f.getInfo(path)
 
 		// only if all true then append
-		send := conf.checkMdepth(f) && conf.checkSize(f) && conf.checkCtime(f) && conf.checkMtime(f) && conf.checkAtime(f) && conf.checkFType(f) && conf.checkFName(f) && conf.checkFExt(f) && conf.checkRsyncTemp(f)
+		send := conf.checkAll(f)
 
 		if send {
 			ch <- f
@@ -337,6 +346,10 @@ func FindCh(ch chan File, conf FindConf) {
 	})
 	chkErr(err)
 	close(ch)
+}
+
+func (conf *FindConf) checkAll(f File) bool {
+	return conf.checkMdepth(f) && conf.checkSize(f) && conf.checkCtime(f) && conf.checkMtime(f) && conf.checkAtime(f) && conf.checkFType(f) && conf.checkFName(f) && conf.checkFExt(f) && conf.checkRsyncTemp(f)
 }
 
 func (conf *FindConf) checkMdepth(f File) bool {
@@ -358,8 +371,14 @@ func (conf *FindConf) checkCtime(f File) bool {
 		return true
 	} else {
 		// if file's info create time is later then set conf return true
-		if f.Stat.Ctim.Sec > conf.Stat.Ctim.Sec {
-			return true
+		if !conf.RevTime {
+			if f.Stat.Ctim.Sec > conf.Stat.Ctim.Sec {
+				return true
+			}
+		} else {
+			if f.Stat.Ctim.Sec < conf.Stat.Ctim.Sec {
+				return true
+			}
 		}
 	}
 	return false
@@ -371,8 +390,15 @@ func (conf *FindConf) checkMtime(f File) bool {
 		return true
 	} else {
 		// if file's info modified time is later then set conf return true
-		if f.Stat.Mtim.Sec > conf.Stat.Mtim.Sec {
-			return true
+		fmt.Println(f.Name(), f.Stat.Mtim)
+		if !conf.RevTime {
+			if f.Stat.Mtim.Sec > conf.Stat.Mtim.Sec {
+				return true
+			}
+		} else {
+			if f.Stat.Mtim.Sec < conf.Stat.Mtim.Sec {
+				return true
+			}
 		}
 	}
 	return false
@@ -384,8 +410,14 @@ func (conf *FindConf) checkAtime(f File) bool {
 		return true
 	} else {
 		// if file's info access time is later then set conf return true
-		if f.Stat.Atim.Sec > conf.Stat.Atim.Sec {
-			return true
+		if !conf.RevTime {
+			if f.Stat.Atim.Sec > conf.Stat.Atim.Sec {
+				return true
+			}
+		} else {
+			if f.Stat.Atim.Sec < conf.Stat.Atim.Sec {
+				return true
+			}
 		}
 	}
 	return false

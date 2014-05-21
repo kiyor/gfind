@@ -6,7 +6,7 @@
 
 * Creation Date : 03-24-2014
 
-* Last Modified : Mon 21 Apr 2014 11:15:41 PM UTC
+* Last Modified : Wed 21 May 2014 08:34:01 PM UTC
 
 * Created By : Kiyor
 
@@ -35,6 +35,7 @@ var (
 	fmmin      *int64  = flag.Int64("mmin", 0, "File's data was last changed n mins ago")
 	fatime     *int64  = flag.Int64("atime", 0, "File's data was last access n*24 hours ago")
 	famin      *int64  = flag.Int64("amin", 0, "File's data was last access n mins ago")
+	frevtime   *bool   = flag.Bool("rt", false, "reverse time flag, last time change to the time before")
 	fmaxdepth  *int    = flag.Int("maxdepth", 0, "Descend at most levels (a non-negative integer) levels of directories below the command line arguments.")
 	fftype     *string = flag.String("type", "f", "file type [f|d|l]")
 	fsize      *string = flag.String("size", "+0", "file size [-|+]%d[k|m|g]")
@@ -70,6 +71,7 @@ func InitFindConfByFlag() gfind.FindConf {
 	conf.Atime = *fatime
 	conf.Amin = *famin
 	conf.ParseCMTime()
+	conf.RevTime = *frevtime
 
 	conf.Ftype = *fftype
 	conf.Name = *fname
