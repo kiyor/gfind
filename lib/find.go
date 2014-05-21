@@ -403,7 +403,6 @@ func (conf *FindConf) checkMtime(f File) bool {
 		return true
 	} else {
 		// if file's info modified time is later then set conf return true
-		fmt.Println(f.Name(), f.Stat.Mtim)
 		if !conf.RevTime {
 			if f.Stat.Mtim.Sec > conf.Stat.Mtim.Sec {
 				return true
