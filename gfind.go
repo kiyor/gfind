@@ -6,7 +6,7 @@
 
 * Creation Date : 03-24-2014
 
-* Last Modified : Wed 21 May 2014 08:49:33 PM UTC
+* Last Modified : Wed 21 May 2014 11:28:06 PM UTC
 
 * Created By : Kiyor
 
@@ -31,8 +31,8 @@ var (
 	fvhost     *string = flag.String("vhost", "client.com", "vhost hostname")
 	fctime     *int64  = flag.Int64("ctime", 0, "File's status was last changed n*24 hours ago")
 	fcmin      *int64  = flag.Int64("cmin", 0, "File's status was last changed n mins ago")
-	fmtime     *int64  = flag.Int64("mtime", 0, "File's data was last changed n*24 hours ago")
-	fmmin      *int64  = flag.Int64("mmin", 0, "File's data was last changed n mins ago")
+	fmtime     *int64  = flag.Int64("mtime", 0, "File's data was last modified n*24 hours ago")
+	fmmin      *int64  = flag.Int64("mmin", 0, "File's data was last modified n mins ago")
 	fatime     *int64  = flag.Int64("atime", 0, "File's data was last access n*24 hours ago")
 	famin      *int64  = flag.Int64("amin", 0, "File's data was last access n mins ago")
 	frevtime   *bool   = flag.Bool("rt", false, "reverse time flag, last time change to the time before")

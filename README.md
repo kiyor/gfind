@@ -6,7 +6,7 @@
 
 - Creation Date : 03-26-2014
 
-- Last Modified : Thu 10 Apr 2014 12:39:08 AM UTC
+- Last Modified : Wed 21 May 2014 11:29:29 PM UTC
 
 - Created By : Kiyor
 
@@ -59,6 +59,9 @@ func main() {
 | cmin     | like find             |
 | mtime    | like find             |
 | mmin     | like find             |
+| atime    | access time (day)     |
+| amin     | access time (minute)  |
+| rt       | use 'before' instead of 'after' for time related flag | 
 | type     | like find             |
 | size     | use [-/+]num[k/m/g/t] |
 | exec     | try this 'ls {};du {}'|
