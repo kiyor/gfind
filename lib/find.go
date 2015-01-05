@@ -452,8 +452,9 @@ func (conf *FindConf) checkFName(f File) bool {
 	}
 	re, err := regexp.Compile(conf.Name)
 	if err != nil {
-		log.Fatalln("name regex not able to compile", err.Error())
-		os.Exit(1)
+		log.Fatalln(conf.Name, "name regex not able to compile", err.Error())
+		return false
+		// 		os.Exit(1)
 	}
 	if re.MatchString(f.Name()) {
 		return true
