@@ -6,7 +6,7 @@
 
 * Creation Date : 03-19-2014
 
-* Last Modified : Mon 05 Jan 2015 02:31:08 AM UTC
+* Last Modified : Mon 05 Jan 2015 03:04:53 AM UTC
 
 * Created By : Kiyor
 
@@ -287,17 +287,17 @@ func (f *File) IsLink() bool {
 }
 
 func (f *File) getInfo(path string) error {
-	// 	var fstat os.FileInfo
-	// 	var err error
+	var fstat os.FileInfo
+	var err error
 	f.Path = path
-	// 	fstat, err = os.Stat(path)
-	// 	if err != nil {
-	// 		fstat, err = os.Lstat(path)
-	// 		if err != nil {
-	// 			return err
-	// 		}
-	// 	}
-	// 	f.FileInfo = fstat
+	fstat, err = os.Stat(path)
+	if err != nil {
+		fstat, err = os.Lstat(path)
+		if err != nil {
+			return err
+		}
+	}
+	f.FileInfo = fstat
 	f.Relpath = path[len(rootdir):]
 	// 	f.Relpath, err = filepath.Rel(rootdir, f.Path)
 	// 	if err != nil {
@@ -322,9 +322,8 @@ func (f *File) getExt() {
 
 func Find(conf FindConf) []*File {
 	var fs []*File
-	err := filepath.Walk(conf.Dir, func(path string, info os.FileInfo, _ error) error {
+	err := filepath.Walk(conf.Dir, func(path string, _ os.FileInfo, _ error) error {
 		var f File
-		f.FileInfo = info
 		err := f.getInfo(path)
 		if err != nil {
 			return nil
