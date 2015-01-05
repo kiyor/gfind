@@ -6,7 +6,7 @@
 
 * Creation Date : 03-24-2014
 
-* Last Modified : Wed 21 May 2014 11:28:06 PM UTC
+* Last Modified : Mon 05 Jan 2015 02:32:07 AM UTC
 
 * Created By : Kiyor
 
@@ -98,7 +98,7 @@ func main() {
 	// 	fs := gfind.Find(conf)
 	// 	gfind.Output(fs, *verbose)
 
-	ch := make(chan gfind.File)
+	ch := make(chan *gfind.File)
 	go gfind.FindCh(ch, conf)
 	if *ex == "" {
 		gfind.OutputCh(ch, *verbose)
@@ -111,8 +111,8 @@ func strip(v []byte) string {
 	return strings.TrimSpace(strings.Trim(string(v), "\n"))
 }
 
-func Exec(ch chan gfind.File, e string) {
-	var v gfind.File
+func Exec(ch chan *gfind.File, e string) {
+	var v *gfind.File
 	ok := true
 	for ok {
 		if v, ok = <-ch; ok {

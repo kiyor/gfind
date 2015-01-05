@@ -6,7 +6,7 @@
 
 * Creation Date : 03-19-2014
 
-* Last Modified : Wed 28 May 2014 12:21:52 AM UTC
+* Last Modified : Mon 05 Jan 2015 02:31:08 AM UTC
 
 * Created By : Kiyor
 
@@ -229,7 +229,7 @@ func (c *FindConf) SetRootdir() {
 	}
 }
 
-func Output(fs []File, b bool) {
+func Output(fs []*File, b bool) {
 	var count int
 	var size int64
 	var str string
@@ -249,8 +249,8 @@ func Output(fs []File, b bool) {
 	}
 }
 
-func OutputCh(ch chan File, b bool) {
-	var v File
+func OutputCh(ch chan *File, b bool) {
+	var v *File
 	var count int
 	var size int64
 	var str string
@@ -287,24 +287,24 @@ func (f *File) IsLink() bool {
 }
 
 func (f *File) getInfo(path string) error {
-	var fstat os.FileInfo
-	var err error
+	// 	var fstat os.FileInfo
+	// 	var err error
 	f.Path = path
-	fstat, err = os.Stat(path)
-	if err != nil {
-		fstat, err = os.Lstat(path)
-		if err != nil {
-			return err
-		}
-	}
-	f.FileInfo = fstat
+	// 	fstat, err = os.Stat(path)
+	// 	if err != nil {
+	// 		fstat, err = os.Lstat(path)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 	}
+	// 	f.FileInfo = fstat
 	f.Relpath = path[len(rootdir):]
 	// 	f.Relpath, err = filepath.Rel(rootdir, f.Path)
 	// 	if err != nil {
 	// 		log.Fatalln(err.Error())
 	// 		return
 	// 	}
-	f.Stat = fstat.Sys().(*syscall.Stat_t)
+	f.Stat = f.FileInfo.Sys().(*syscall.Stat_t)
 	f.getExt()
 
 	if !f.IsDir() && !f.IsLink() {
@@ -320,10 +320,11 @@ func (f *File) getExt() {
 	}
 }
 
-func Find(conf FindConf) []File {
-	var fs []File
-	err := filepath.Walk(conf.Dir, func(path string, _ os.FileInfo, _ error) error {
+func Find(conf FindConf) []*File {
+	var fs []*File
+	err := filepath.Walk(conf.Dir, func(path string, info os.FileInfo, _ error) error {
 		var f File
+		f.FileInfo = info
 		err := f.getInfo(path)
 		if err != nil {
 			return nil
@@ -333,7 +334,7 @@ func Find(conf FindConf) []File {
 		send := conf.checkAll(f)
 
 		if send {
-			fs = append(fs, f)
+			fs = append(fs, &f)
 		}
 		return nil
 	})
@@ -341,9 +342,10 @@ func Find(conf FindConf) []File {
 	return fs
 }
 
-func FindCh(ch chan File, conf FindConf) {
-	err := filepath.Walk(conf.Dir, func(path string, _ os.FileInfo, _ error) error {
+func FindCh(ch chan *File, conf FindConf) {
+	err := filepath.Walk(conf.Dir, func(path string, info os.FileInfo, _ error) error {
 		var f File
+		f.FileInfo = info
 		err := f.getInfo(path)
 		if err != nil {
 			return nil
@@ -353,7 +355,7 @@ func FindCh(ch chan File, conf FindConf) {
 		send := conf.checkAll(f)
 
 		if send {
-			ch <- f
+			ch <- &f
 		}
 		return nil
 	})
